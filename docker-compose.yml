@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  core:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      SALES_SERVICE_URL: http://sales:4000/api
+      SALES_SERVICE_TOKEN: local-sync-token
+    ports:
+      - '3000:3000'
+    depends_on:
+      - sales
+
+  sales:
+    build:
+      context: ../vehicle-sales-service
+    env_file:
+      - ../vehicle-sales-service/.env
+    environment:
+      PORT: 4000
+      INTERNAL_SYNC_TOKEN: local-sync-token
+    ports:
+      - '4000:4000'
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev --http-port=8080 --hostname-strict=false
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - '8080:8080'
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+
+volumes:
+  keycloak-data:
+    driver: local
