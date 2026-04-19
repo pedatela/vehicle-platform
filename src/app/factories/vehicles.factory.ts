@@ -17,4 +17,12 @@ const createSalesSyncClient = () => {
 
 export const createVehiclesService = (
   repository: VehiclesRepository = new InMemoryVehiclesRepository()
-): VehiclesService => new VehiclesService(repository, createSalesSyncClient());
+): VehiclesService => {
+  if (!singleton) {
+    singleton = new VehiclesService(repository, createSalesSyncClient());
+  }
+
+  return singleton;
+};
+
+let singleton: VehiclesService | null = null;

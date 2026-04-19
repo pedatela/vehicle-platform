@@ -29,6 +29,16 @@ export const vehicleUpdateSchema = vehicleCreateSchema.partial().refine(
   }
 );
 
+export const vehicleSaleSyncSchema = z
+  .object({
+    isSold: z.boolean(),
+    buyerId: z.string().trim().min(1, "buyerId não pode ser vazio").nullable().optional(),
+  })
+  .refine((payload) => (payload.isSold ? !!payload.buyerId : payload.buyerId === null), {
+    message: "Para isSold=true informe buyerId. Para isSold=false envie buyerId=null.",
+    path: ["buyerId"],
+  });
+
 export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>;
 export type VehicleCreatePayload = z.infer<typeof vehicleCreatePayloadSchema>;
 export type VehicleUpdateInput = z.infer<typeof vehicleUpdateSchema>;

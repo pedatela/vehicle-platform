@@ -23,6 +23,8 @@ services:
     environment:
       PORT: 4000
       INTERNAL_SYNC_TOKEN: local-sync-token
+      CORE_SERVICE_URL: http://core:3000/api
+      CORE_SERVICE_TOKEN: local-sync-token
     ports:
       - '4000:4000'
 

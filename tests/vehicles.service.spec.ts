@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VehiclesService } from '../src/app/services/vehicles.service';
 import { InMemoryVehiclesRepository } from '../src/infra/repositories/in-memory/in-memory-vehicles.repository';
 import { Vehicle, VehicleAttributes } from '../src/domain/vehicles/entities/vehicle';
-import { SalesSyncPort } from '../src/app/services/sales-sync.client';
+import { SalesSyncPort } from '../src/app/services/interfaces/sales-sync.interface';
 
 const makeVehicle = (attrs: Partial<VehicleAttributes> = {}) =>
   Vehicle.create({

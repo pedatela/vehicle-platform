@@ -52,6 +52,7 @@ A comunicação entre os serviços é feita via HTTP:
 1. Core cria/atualiza/remove um veículo.
 2. `SalesSyncClient` envia a projeção para `POST/PUT/DELETE /api/internal/vehicles` do serviço de vendas.
 3. O Sales mantém seu inventário e responde aos clientes (`GET /vehicles/available`, `POST /sales`, webhooks etc.).
+4. Quando um pagamento é confirmado/cancelado no Sales, ele chama `PUT /api/internal/vehicles/:id/sale-status` para refletir `isSold`/`buyerId` no Core.
 
 Para executar as duas APIs localmente use o `docker-compose.yml` deste diretório:
 
@@ -87,6 +88,77 @@ Este repositório contém apenas o código da API Core e o workflow de entrega c
 | DELETE | `/api/vehicles/:id` | Remove o veículo.                       | JWT + role `seller`. |
 
 > A compra e alteração de status público acontecem **exclusivamente** no `vehicle-sales-service`.
+
+## Rotas internas (token)
+
+| Método | Caminho                                  | Descrição                                                            |
+|--------|------------------------------------------|----------------------------------------------------------------------|
+| PUT    | `/api/internal/vehicles/:id/sale-status` | Atualiza status de venda no Core (`isSold`, `buyerId`) via Sales.   |
+
+### Exemplo de uso da rota interna
+
+Header obrigatório:
+
+```http
+x-internal-token: local-sync-token
+content-type: application/json
+```
+
+#### Venda confirmada (`PAID`)
+
+```bash
+curl -X PUT 'http://localhost:3000/api/internal/vehicles/<vehicleId>/sale-status' \
+  -H 'x-internal-token: local-sync-token' \
+  -H 'content-type: application/json' \
+  -d '{
+    "isSold": true,
+    "buyerId": "12345678901"
+  }'
+```
+
+```json
+{
+  "isSold": true,
+  "buyerId": "12345678901"
+}
+```
+
+#### Venda cancelada (`CANCELED`)
+
+```bash
+curl -X PUT 'http://localhost:3000/api/internal/vehicles/<vehicleId>/sale-status' \
+  -H 'x-internal-token: local-sync-token' \
+  -H 'content-type: application/json' \
+  -d '{
+    "isSold": false,
+    "buyerId": null
+  }'
+```
+
+```json
+{
+  "isSold": false,
+  "buyerId": null
+}
+```
+
+#### Resposta de sucesso
+
+```json
+{
+  "message": "Status de venda sincronizado",
+  "vehicle": {
+    "id": "<vehicleId>",
+    "brand": "BYD",
+    "model": "Seal",
+    "year": 2024,
+    "color": "Blue",
+    "price": 220000,
+    "isSold": true,
+    "buyerId": "12345678901"
+  }
+}
+```
 
 ### Payloads de exemplo
 
@@ -142,12 +214,14 @@ COGNITO_CLIENT_ID=4h1exampleappclient
 AUTH_SELLER_ROLE=seller
 SALES_SERVICE_URL=http://sales:4000/api
 SALES_SERVICE_TOKEN=local-sync-token
+INTERNAL_SYNC_TOKEN=local-sync-token
 # Opcional: definir explicitamente o issuer
 # COGNITO_ISSUER=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abc123DEF
 ```
 
 - `SALES_SERVICE_URL` aponta para o prefixo público do serviço de vendas (em produção usamos o mesmo ALB com path `/sales`).
 - `SALES_SERVICE_TOKEN` deve coincidir com `INTERNAL_SYNC_TOKEN` configurado no `vehicle-sales-service`.
+- `INTERNAL_SYNC_TOKEN` protege as rotas internas recebidas do Sales (se ausente, o Core usa `SALES_SERVICE_TOKEN` como fallback).
 
 ## Deploy na AWS (CI/CD + ECS)
 
