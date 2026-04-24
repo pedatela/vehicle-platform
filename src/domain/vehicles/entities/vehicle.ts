@@ -8,6 +8,8 @@ export type VehicleAttributes = {
   price: number;
   isSold: boolean;
   buyerId?: string | null;
+  buyerEmail?: string | null;
+  buyerName?: string | null;
 };
 
 export class Vehicle {
@@ -20,7 +22,9 @@ export class Vehicle {
     const props: VehicleAttributes = {
       ...attrs,
       isSold: attrs.isSold ?? false,
-      buyerId: attrs.buyerId ?? null
+      buyerId: attrs.buyerId ?? null,
+      buyerEmail: attrs.buyerEmail ?? null,
+      buyerName: attrs.buyerName ?? null
     };
     return new Vehicle(id, props);
   }
@@ -57,6 +61,14 @@ export class Vehicle {
     return this.props.buyerId;
   }
 
+  get buyerEmail(): string | null | undefined {
+    return this.props.buyerEmail;
+  }
+
+  get buyerName(): string | null | undefined {
+    return this.props.buyerName;
+  }
+
   update(attrs: Partial<VehicleAttributes>): void {
     const sanitized = Object.fromEntries(
       Object.entries(attrs).filter(([, value]) => value !== undefined)
@@ -74,7 +86,9 @@ export class Vehicle {
       color: this.color,
       price: this.price,
       isSold: this.isSold,
-      buyerId: this.buyerId ?? null
+      buyerId: this.buyerId ?? null,
+      buyerEmail: this.buyerEmail ?? null,
+      buyerName: this.buyerName ?? null
     };
   }
 }

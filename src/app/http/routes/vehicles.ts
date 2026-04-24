@@ -7,14 +7,17 @@ import {
   listVehicles,
   updateVehicle,
 } from "../controllers/vehicles.controller";
+import { authenticate } from "../middlewares/auth";
+import { authorizeRole } from "../middlewares/authorize-role";
 
 const vehiclesRouter = Router();
 const sellerRole = authConfig.sellerRole ?? "seller";
+const requireSeller = [authenticate, authorizeRole(sellerRole)];
 
 vehiclesRouter.get("/", listVehicles);
 vehiclesRouter.get("/:id", getVehicle);
-vehiclesRouter.post("/", createVehicle);
-vehiclesRouter.put("/:id", updateVehicle);
-vehiclesRouter.delete("/:id", deleteVehicle);
+vehiclesRouter.post("/", ...requireSeller, createVehicle);
+vehiclesRouter.put("/:id", ...requireSeller, updateVehicle);
+vehiclesRouter.delete("/:id", ...requireSeller, deleteVehicle);
 
 export default vehiclesRouter;

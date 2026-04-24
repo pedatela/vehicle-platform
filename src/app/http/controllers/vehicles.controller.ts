@@ -30,6 +30,8 @@ const formatVehicle = (vehicle: Vehicle): VehicleDTO => {
     payload.isSold && payload.buyerId
       ? {
           id: payload.buyerId,
+          email: payload.buyerEmail ?? null,
+          name: payload.buyerName ?? null
         }
       : null;
 

@@ -14,6 +14,8 @@ export interface VehicleQuery extends ParsedQs {
 
 export type VehicleBuyerDTO = {
   id: string;
+  email?: string | null;
+  name?: string | null;
 };
 
 export type VehicleDTO = VehicleAttributes & {

@@ -10,10 +10,14 @@ export const syncVehicleSaleStatus = async (req: Request, res: Response) => {
     const { id } = req.params as { id: string };
     const payload = vehicleSaleSyncSchema.parse(req.body ?? {});
     const buyerId = payload.isSold ? payload.buyerId ?? null : null;
+    const buyerEmail = payload.isSold ? payload.buyerEmail ?? null : null;
+    const buyerName = payload.isSold ? payload.buyerName ?? null : null;
 
     const updated = await vehiclesService.update(id, {
       isSold: payload.isSold,
       buyerId,
+      buyerEmail,
+      buyerName,
     });
 
     if (!updated) {
