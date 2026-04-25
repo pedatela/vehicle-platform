@@ -1,6 +1,36 @@
-version: '3.9'
-
 services:
+  postgres-core:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: postechappcore
+      POSTGRES_USER: postechadmin
+      POSTGRES_PASSWORD: postechadmin
+    ports:
+      - '5433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postechadmin -d postechappcore']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-core-data:/var/lib/postgresql/data
+
+  postgres-sales:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: postechappsales
+      POSTGRES_USER: postechadmin
+      POSTGRES_PASSWORD: postechadmin
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postechadmin -d postechappsales']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-sales-data:/var/lib/postgresql/data
+
   core:
     build:
       context: .
@@ -10,10 +40,19 @@ services:
       PORT: 3000
       SALES_SERVICE_URL: http://sales:4000/api
       SALES_SERVICE_TOKEN: local-sync-token
+      DATABASE_HOST: postgres-core
+      DATABASE_PORT: 5432
+      DATABASE_NAME: postechappcore
+      DATABASE_USER: postechadmin
+      DATABASE_PASSWORD: postechadmin
+      DATABASE_SSL: 'false'
     ports:
       - '3000:3000'
     depends_on:
-      - sales
+      sales:
+        condition: service_started
+      postgres-core:
+        condition: service_healthy
 
   sales:
     build:
@@ -25,8 +64,17 @@ services:
       INTERNAL_SYNC_TOKEN: local-sync-token
       CORE_SERVICE_URL: http://core:3000/api
       CORE_SERVICE_TOKEN: local-sync-token
+      DATABASE_HOST: postgres-sales
+      DATABASE_PORT: 5432
+      DATABASE_NAME: postechappsales
+      DATABASE_USER: postechadmin
+      DATABASE_PASSWORD: postechadmin
+      DATABASE_SSL: 'false'
     ports:
       - '4000:4000'
+    depends_on:
+      postgres-sales:
+        condition: service_healthy
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
@@ -41,4 +89,8 @@ services:
 
 volumes:
   keycloak-data:
+    driver: local
+  postgres-core-data:
+    driver: local
+  postgres-sales-data:
     driver: local

@@ -31,18 +31,18 @@ vehicle-platform/
 │  │  ├─ services/vehicles.service.ts
 │  │  └─ services/sales-sync.client.ts
 │  ├─ domain/vehicles/ (entidade + contrato do repositório)
-│  ├─ infra/repositories/in-memory/ (implementação em memória)
+│  ├─ infra/repositories/ (in-memory + postgres)
 │  └─ server.ts
 ├─ tests/ (Vitest)
 ├─ Dockerfile
-└─ docker-compose.yml (stack local core + sales + keycloak)
+└─ docker-compose.yml (stack local core + sales + 2 bancos + keycloak)
 ```
 
 ## Domínio e sincronização
 
 - **Domain**: entidade `Vehicle` controla atributos básicos (`brand`, `model`, `year`, `color`, `price`, `isSold`, `buyerId`).
 - **Application**: `VehiclesService` lida com cadastro, edição, remoção e lista de veículos. Após cada operação ele chama o `SalesSyncClient`, que faz o `POST/PUT/DELETE` nos endpoints internos do serviço de vendas.
-- **Infra**: `InMemoryVehiclesRepository` mantém os dados em memória (pode ser trocado por uma implementação Postgres).
+- **Infra**: usa Postgres quando `DATABASE_*` estiver configurado; caso contrário, cai no `InMemoryVehiclesRepository`.
 - **HTTP**: controllers expõem apenas **APIs administrativas**. O fluxo de compra e listagens públicas acontece no repositório `vehicle-sales-service`.
 
 ## Integração com o Sales Service
@@ -64,6 +64,8 @@ Os containers expõem:
 
 - Core: `http://localhost:3000/api`
 - Sales: `http://localhost:4000/api`
+- Postgres Core: `localhost:5433` (db `postechappcore`)
+- Postgres Sales: `localhost:5434` (db `postechappsales`)
 - Cognito: use o Hosted UI ou CLI da AWS para autenticar usuários no User Pool configurado
 
 ## Infraestrutura (Terraform)
@@ -215,6 +217,12 @@ AUTH_SELLER_ROLE=seller
 SALES_SERVICE_URL=http://sales:4000/api
 SALES_SERVICE_TOKEN=local-sync-token
 INTERNAL_SYNC_TOKEN=local-sync-token
+DATABASE_HOST=localhost
+DATABASE_PORT=5433
+DATABASE_NAME=postechappcore
+DATABASE_USER=postechadmin
+DATABASE_PASSWORD=postechadmin
+DATABASE_SSL=false
 # Opcional: definir explicitamente o issuer
 # COGNITO_ISSUER=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abc123DEF
 ```
@@ -222,6 +230,7 @@ INTERNAL_SYNC_TOKEN=local-sync-token
 - `SALES_SERVICE_URL` aponta para o prefixo público do serviço de vendas (em produção usamos o mesmo ALB com path `/sales`).
 - `SALES_SERVICE_TOKEN` deve coincidir com `INTERNAL_SYNC_TOKEN` configurado no `vehicle-sales-service`.
 - `INTERNAL_SYNC_TOKEN` protege as rotas internas recebidas do Sales (se ausente, o Core usa `SALES_SERVICE_TOKEN` como fallback).
+- `DATABASE_*` habilita persistência em Postgres para o Core.
 
 ## Deploy na AWS (CI/CD + ECS)
 
